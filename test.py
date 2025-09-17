@@ -119,8 +119,10 @@ class Energy_encoding():
         Local annihilation operator in the truncated Fock basis 0..nlvl.
         Dimension dloc = nlvl + 1.
         """
-        d = self.n_lvl + 1
+        d = int(self.n_lvl + 1)
         a = np.zeros((d, d), dtype=float)
+        
+        #check bound here, should be d. 
         for p in range(d-1):
             a[p, p+1] = np.sqrt(p+1)
         return a
@@ -136,12 +138,16 @@ class Energy_encoding():
         - dloc: local dimension per mode
         """
         # mode integers and frequencies
+        
         n_list = np.arange(-self.Nmax, self.Nmax+1)    # e.g. [-Nmax, ..., 0, ..., Nmax]
+        
         ks = 2.0 * np.pi * n_list / self.L
+
         omegas = np.sqrt(ks**2 + self.m**2)
 
+
         # local truncated operators
-        dloc = self.n_lvl + 1
+        dloc = int(self.n_lvl + 1)
         a_loc = self.local_annihilation()
         
         adag_loc = a_loc.T
@@ -155,22 +161,25 @@ class Energy_encoding():
         a_list = []
         adag_list = []
         n_list_ops = []
+        
         for j in range(self.N_modes):
             op = None
             # build kron(I,...,I, a_loc, I,...,I)
             for s in range(self.N_modes):
                 mat = a_loc if s == j else I_loc
                 op = mat if op is None else np.kron(op, mat)
+            
             op_a = op
             op_adag = op_a.T  # real matrices; in complex case use .conj().T
             op_n = op_adag @ op_a
+            
             a_list.append(op_a)
             adag_list.append(op_adag)
             n_list_ops.append(op_n)
 
 
-            ops = {"a": a_list, "ad": adag_list, "n": n_list_ops}
-            return n_list, omegas, ops, dloc
+        ops = {"a": a_list, "ad": adag_list, "n": n_list_ops}
+        return n_list, omegas, ops, dloc
 
 
     def build_free_hamiltonian(self):
@@ -181,9 +190,15 @@ class Energy_encoding():
 
         dim = ops['n'][0].shape[0]
         H0 = np.zeros((dim, dim), dtype=float)
+
+ 
         for j in range(self.N_modes):
+
             H0 += omegas[j] * (ops['n'][j])
         return H0
+
+
+
 
     def build_phi4_from_mode_sum(self):
         """
@@ -245,9 +260,10 @@ class Energy_encoding():
         """
         n_list, omegas, ops, dloc = self.build_mode_operators()
         H0 = self.build_free_hamiltonian()
-        if lam != 0.0:
+        if self.lambd != 0.0:
             H_int = self.build_phi4_from_mode_sum()
         else:
             H_int = np.zeros_like(H0)
         H = H0 + H_int
-        return H, H0, H_int, n_list, omegas, ops
+        #return H, H0, H_int, n_list, omegas, ops
+        return H
